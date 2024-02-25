@@ -56,21 +56,130 @@ local plugins = {
     end,
   },
   {
+    "MunifTanjim/eslint.nvim",
+    lazy = false,
+    ft = "javascript,typescript,typescriptreact,javascriptreact,vue",
+    config = function()
+      local eslint = require "eslint"
+      eslint.setup {
+        bin = "eslint", -- or `eslint_d`
+        code_actions = {
+          enable = true,
+          apply_on_save = {
+            enable = true,
+            types = { "directive", "problem", "suggestion", "layout" },
+          },
+          disable_rule_comment = {
+            enable = true,
+            location = "separate_line", -- or `same_line`
+          },
+        },
+        diagnostics = {
+          enable = true,
+          report_unused_disable_directives = false,
+          run_on = "type", -- or `save`
+        },
+      }
+    end,
+  },
+  {
     "mfussenegger/nvim-dap",
+    dependencies = {
+      "rcarriga/nvim-dap-ui",
+      "mxsdev/nvim-dap-vscode-js",
+      -- build debugger from source
+      {
+        "microsoft/vscode-js-debug",
+        version = "1.x",
+        build = "npm i && npm run compile vsDebugServerBundle && mv dist out",
+      },
+      version = "1.x",
+      build = "npm i && npm run compile vsDebugServerBundle && mv dist out",
+    },
     init = function()
       require("core.utils").load_mappings "dap"
+      require("dap-vscode-js").setup {
+        debugger_path = vim.fn.stdpath "data" .. "/lazy/vscode-js-debug",
+        -- adapters = { "pwa-node", "pwa-chrome", "pwa-msedge", "node-terminal", "pwa-extensionHost" },
+        adapters = { "pwa-chrome" },
+      }
     end,
+    config = function()
+      for _, language in ipairs { "typescript", "javascript", "svelte", "vue" } do
+        require("dap").configurations[language] = {
+          {
+            type = "pwa-chrome",
+            name = "Launch Chrome to debug client",
+            request = "launch",
+            runtimeExecutable = "stable",
+            runtimeArgs = { "--enable-features=UseOzonePlatform", "--ozone-platform=wayland" },
+            url = "http://localhost:3000",
+            sourceMaps = true,
+            resolveSourceMapLocations = {
+              "${workspaceFolder}/**",
+              "!**/node_modules/**",
+            },
+            protocol = "inspector",
+            port = 9222,
+            webRoot = "${workspaceFolder}",
+            -- skip files from vite's hmr
+            -- skipFiles = { "${workspaceFolder}/node_modules/**/*.js" },
+            skipFiles = { "**/node_modules/**/*", "**/@vite/*", "**/src/client/*", "**/src/*" },
+          },
+          -- only if language is javascript, offer this debug action
+          language == "javascript"
+              and {
+                -- use nvim-dap-vscode-js's pwa-node debug adapter
+                type = "pwa-node",
+                -- launch a new process to attach the debugger to
+                request = "launch",
+                -- name of the debug action you have to select for this config
+                name = "Launch file in new node process",
+                -- launch current file with wayland support for chrome
+                runtimeExecutable = "google-chrome",
+                runtimeArgs = { "--enable-features=UseOzonePlatform", "--ozone-platform=wayland" },
+                program = "${file}",
+                cwd = "${workspaceFolder}",
+              }
+            or nil,
+        }
+      end
+    end,
+  },
+  {
+    "mxsdev/nvim-dap-vscode-js",
+    lazy = false,
+    ft = "javascript,typescript,typescriptreact,javascriptreact,vue",
+  },
+  {
+    "microsoft/vscode-js-debug",
+    dependencies = {
+      "mfussenegger/nvim-dap",
+    },
+    lazy = false,
+    ft = "javascript,typescript,typescriptreact,javascriptreact,vue",
   },
   {
     "rcarriga/nvim-dap-ui",
     init = function()
       require("dapui").setup()
+      local dap, dapui = require "dap", require "dapui"
+      dap.listeners.after.event_initialized["dapui_config"] = function()
+        dapui.open { reset = true }
+      end
+      dap.listeners.before.event_terminated["dapui_config"] = dapui.close
+      dap.listeners.before.event_exited["dapui_config"] = dapui.close
     end,
   },
   {
     -- "leoluz/nvim-dap-go",
     "dreamsofcode-io/nvim-dap-go",
     ft = "go",
+    opts = {
+      delve = {
+        path = "dlv", -- Adjust to where delve is installed
+      },
+    },
     dependencies = "mfussenegger/nvim-dap",
     config = function(_, opts)
       require("dap-go").setup(opts)
@@ -218,29 +327,37 @@ local plugins = {
     opts = {},
   },
   {
-    "kevinhwang91/nvim-ufo",
+    "chrisgrieser/nvim-origami",
     lazy = false,
-    dependencies = {
-      "kevinhwang91/promise-async",
-    },
+    event = "BufReadPost", -- later or on keypress would prevent saving folds
     opts = {
-      config = function()
-        local capabilities = vim.lsp.protocol.make_client_capabilities()
-        capabilities.textDocument.foldingRange = {
-          dynamicRegistration = false,
-          lineFoldingOnly = true,
-        }
-        local language_servers = require("lspconfig").util.available_servers() -- or list servers manually like {'gopls', 'clangd'}
-        for _, ls in ipairs(language_servers) do
-          require("lspconfig")[ls].setup {
-            capabilities = capabilities,
-            -- you can add other fields for setting up lsp server in this table
-          }
-        end
-        require("ufo").setup()
-      end,
+      keepFoldsAcrossSessions = true,
     },
   },
+  -- {
+  --   "kevinhwang91/nvim-ufo",
+  --   lazy = false,
+  --   dependencies = {
+  --     "kevinhwang91/promise-async",
+  --   },
+  --   opts = {
+  --     config = function()
+  --       local capabilities = vim.lsp.protocol.make_client_capabilities()
+  --       capabilities.textDocument.foldingRange = {
+  --         dynamicRegistration = false,
+  --         lineFoldingOnly = true,
+  --       }
+  --       local language_servers = require("lspconfig").util.available_servers() -- or list servers manually like {'gopls', 'clangd'}
+  --       for _, ls in ipairs(language_servers) do
+  --         require("lspconfig")[ls].setup {
+  --           capabilities = capabilities,
+  --           -- you can add other fields for setting up lsp server in this table
+  --         }
+  --       end
+  --       require("ufo").setup()
+  --     end,
+  --   },
+  -- },
   {
     "rcarriga/nvim-notify",
     enabled = true,
@@ -538,6 +655,10 @@ local plugins = {
         },
       }
     end,
+  },
+  {
+    "nanotee/sqls.nvim",
+    lazy = false,
   },
   -- {
   --   "jose-elias-alvarez/null-ls.nvim",

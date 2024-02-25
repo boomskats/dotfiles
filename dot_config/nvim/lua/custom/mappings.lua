@@ -187,7 +187,7 @@ M.dap = {
     },
     ["<leader>dd"] = {
       function()
-        vim.api.nvim_command "write"
+        -- vim.api.nvim_command "write"
         local dap = require "dap"
         dap.run_last()
       end,
@@ -195,7 +195,7 @@ M.dap = {
     },
     ["<leader>dc"] = {
       function()
-        vim.api.nvim_command "write"
+        -- vim.api.nvim_command "write"
         local dap = require "dap"
         dap.continue()
       end,
@@ -262,6 +262,23 @@ M.trouble = {
     ["<leader>dr"] = {
       "<cmd> Trouble lsp_references <CR>",
       "References",
+    },
+  },
+}
+
+M.custom = {
+  n = {
+    ["<leader>to"] = {
+      "<cmd> lcd /home/nik/dev <CR>",
+      "Open /home/nik/dev",
+    },
+    ["<leader>tq"] = {
+      "<cmd> lcd /home/nik/dev/pare <CR>",
+      "Open /home/nik/dev/pare",
+    },
+    ["<leader>tw"] = {
+      "<cmd> lcd /home/nik/dev/clearas <CR>",
+      "Open /home/nik/dev/clearas",
     },
   },
 }

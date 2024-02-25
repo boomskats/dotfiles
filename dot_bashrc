@@ -8,7 +8,7 @@ fi
 # User specific environment
 if ! [[ "$PATH" =~ "$HOME/.local/bin:$HOME/bin:" ]]
 then
-    PATH="$HOME/.local/bin:$HOME/bin:$PATH"
+    PATH="$HOME/.local/bin:$HOME/bin:$(go env GOPATH)/bin:$PATH"
 fi
 export PATH
 
@@ -42,10 +42,23 @@ alias vim="nvim"
 alias sdi="sudo dnf install -y"
 alias ds="dnf search"
 alias vc="code $WL"
+alias sl="slack $WL"
 alias nve="cd ~/.config/nvim/lua/custom && nvim ."
+alias nvdev="cd ~/dev && nvim ."
+alias docker="podman"
+
+function mcd() {
+    mkdir -p "$1" && cd "$1"
+}
 
 # cargo init
 . "$HOME/.cargo/env"
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+export XDG_CONFIG_HOME="$HOME/.config"
 
 # starship
 eval "$(starship init bash)"
